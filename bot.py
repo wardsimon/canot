@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
+import dataclasses
 
 # flake8: noqa F401
 
@@ -15,8 +16,17 @@ from vendeeglobe import (
     config,
 )
 from vendeeglobe.utils import distance_on_surface
+from dataclasses import dataclass
+from random import random
 
-CREATOR = "TeamName"  # This is your team name
+@dataclass
+class Position:
+    latitude: float = 0.0
+    longitude: float = 0.0
+
+
+CREATOR = "CaptainHaddock"  # This is your team name
+
 
 
 class Bot:
@@ -27,17 +37,27 @@ class Bot:
     def __init__(self):
         self.team = CREATOR  # Mandatory attribute
         self.avatar = 1  # Optional attribute
+        self.previous = Position()
+        self.step = 0
         self.course = [
             Checkpoint(latitude=43.797109, longitude=-11.264905, radius=50),
-            Checkpoint(longitude=-29.908577, latitude=17.999811, radius=50),
-            Checkpoint(latitude=-11.441808, longitude=-29.660252, radius=50),
-            Checkpoint(longitude=-63.240264, latitude=-61.025125, radius=50),
-            Checkpoint(latitude=2.806318, longitude=-168.943864, radius=1990.0),
-            Checkpoint(latitude=-62.052286, longitude=169.214572, radius=50.0),
+            Checkpoint(latitude=39.71, longitude=-50.01, radius=50),
+            Checkpoint(latitude=20.89, longitude=-70.741, radius=50),
+            Checkpoint(latitude=20.138, longitude=-73.652, radius=50),
+            Checkpoint(latitude=19.114, longitude=-75.421, radius=50),
+            Checkpoint(longitude=-75.322, latitude=17.099, radius=50),
+            Checkpoint(longitude=-80.0148, latitude=9.3935, radius=15),
+            Checkpoint(longitude=-78.223, latitude=5.178, radius=50),
+            Checkpoint(latitude=2.806318, longitude=-168.943864, radius=500.0),
+            Checkpoint(latitude=-16.55, longitude=172.44, radius=30.0),
+            Checkpoint(latitude=-31.73, longitude=168.4, radius=30.0),
+            Checkpoint(latitude=-48.22, longitude=149.68, radius=30.0),
+            Checkpoint(latitude=-36.739, longitude=112.324, radius=30.0),
             Checkpoint(latitude=-15.668984, longitude=77.674694, radius=1190.0),
-            Checkpoint(latitude=-39.438937, longitude=19.836265, radius=50.0),
-            Checkpoint(latitude=14.881699, longitude=-21.024326, radius=50.0),
-            Checkpoint(latitude=44.076538, longitude=-18.292936, radius=50.0),
+            Checkpoint(latitude=-38.41,  longitude=18.11, radius=200.0),
+            Checkpoint(latitude=15.454,  longitude=-20.522, radius=200.0),
+            Checkpoint(latitude=35.246,  longitude=-21.753, radius=50.0),
+            Checkpoint(latitude=43.797109, longitude=-11.264905, radius=50),
             Checkpoint(
                 latitude=config.start.latitude,
                 longitude=config.start.longitude,
@@ -82,8 +102,17 @@ class Bot:
         world_map:
             The map of the world: 1 for sea, 0 for land.
         """
+        current_position = Position(latitude=latitude, longitude=longitude)
+
         instructions = Instructions()
         for ch in self.course:
+
+            traveled_dist = distance_on_surface(
+                longitude1=current_position.longitude,
+                latitude1=current_position.latitude,
+                longitude2=self.previous.longitude,
+                latitude2=self.previous.latitude,
+            )
             dist = distance_on_surface(
                 longitude1=longitude,
                 latitude1=latitude,
@@ -98,9 +127,15 @@ class Bot:
             if dist < ch.radius:
                 ch.reached = True
             if not ch.reached:
+                if np.abs(traveled_dist) < 1.5 and self.step > 5 and self.course.index(ch) != len(self.course) - 1:
+                    print(traveled_dist)
+                    fudge = 0.001*(random() - 0.5)
+                    ch.longitude += fudge
+                    ch.latitude += fudge
                 instructions.location = Location(
                     longitude=ch.longitude, latitude=ch.latitude
                 )
                 break
-
+        self.previous = current_position
+        self.step += 1
         return instructions
