@@ -137,27 +137,26 @@ class Bot:
             if dist < ch.radius:
                 ch.reached = True
             if not ch.reached:
-                # if np.abs(traveled_dist) < 2 and self.step > 40 and self.course.index(ch) != len(self.course) - 1 and self.tacking_times < 4:
-                #     print(traveled_dist)
-                #     fudge = 2 * (random() - 0.5)
-                #     a = go_to(Location(longitude=ch.longitude, latitude=ch.latitude),
-                #               Location(longitude=longitude, latitude=latitude))
-                #     if self.tacking and self.tacking_n < 15:
-                #         self.tacking_n += 1
-                #         instructions.heading = Heading(heading)
-                #         break
-                #     if self.previous_tack > 0:
-                #         if fudge > 0:
-                #             fudge = -fudge
-                #     else:
-                #         if fudge < 0:
-                #             fudge = -fudge
-                #     instructions.heading = Heading(angle=a * fudge)
-                #     self.previous_tack = fudge
-                #     self.tacking = True
-                #     self.tacking_times += 1
-                #     self.tacking_n = 0
-                #     break
+                if np.abs(traveled_dist) < 2 and self.step > 40 and self.course.index(ch) != len(self.course) - 1 and self.tacking_times < 4:
+                    print(traveled_dist)
+                    fudge = 10 * (random() - 0.5)
+                    a = go_to(Location(longitude=longitude, latitude=latitude),Location(longitude=ch.longitude, latitude=ch.latitude))
+                    if self.tacking and self.tacking_n < 45:
+                        self.tacking_n += 1
+                        instructions.heading = Heading(heading)
+                        break
+                    if self.previous_tack > 0:
+                        if fudge > 0:
+                            fudge = -fudge
+                    else:
+                        if fudge < 0:
+                            fudge = -fudge
+                    instructions.heading = Heading(angle=a + fudge)
+                    self.previous_tack = fudge
+                    self.tacking = True
+                    self.tacking_times += 1
+                    self.tacking_n = 0
+                    break
                 self.tacking = False
                 self.tacking_n = 0
                 self.tacking_times = 0
