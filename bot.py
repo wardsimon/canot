@@ -15,9 +15,10 @@ from vendeeglobe import (
     WeatherForecast,
     config,
 )
-from vendeeglobe.utils import distance_on_surface
+from vendeeglobe.utils import distance_on_surface, goto as go_to
 from dataclasses import dataclass
 from random import random
+
 
 @dataclass
 class Position:
@@ -27,9 +28,11 @@ class Position:
 
 CREATOR = "CaptainHaddock"  # This is your team name
 
-import os 
+import os
+
 dir_path = os.path.dirname(os.path.realpath(__file__))
 icon = os.path.join(dir_path, "haddock.png")
+
 
 class Bot:
     """
@@ -37,10 +40,14 @@ class Bot:
     """
 
     def __init__(self):
+        self.tacking_n = 0
+        self.tacking_times = 0
+        self.previous_tack = 0
         self.team = CREATOR  # Mandatory attribute
-        self.avatar = 1  # Optional attribute
+        self.avatar = icon  # Optional attribute
         self.previous = Position()
         self.step = 0
+        self.tacking = False
         self.course = [
             Checkpoint(latitude=43.797109, longitude=-11.264905, radius=50),
             Checkpoint(latitude=39.71, longitude=-50.01, radius=50),
@@ -56,9 +63,9 @@ class Bot:
             Checkpoint(latitude=-48.22, longitude=149.68, radius=30.0),
             Checkpoint(latitude=-36.739, longitude=112.324, radius=30.0),
             Checkpoint(latitude=-15.668984, longitude=77.674694, radius=1190.0),
-            Checkpoint(latitude=-38.41,  longitude=18.11, radius=200.0),
-            Checkpoint(latitude=15.454,  longitude=-20.522, radius=200.0),
-            Checkpoint(latitude=35.246,  longitude=-21.753, radius=50.0),
+            Checkpoint(latitude=-38.41, longitude=18.11, radius=200.0),
+            Checkpoint(latitude=15.454, longitude=-20.522, radius=200.0),
+            Checkpoint(latitude=35.246, longitude=-21.753, radius=50.0),
             Checkpoint(latitude=43.797109, longitude=-11.264905, radius=50),
             Checkpoint(
                 latitude=config.start.latitude,
@@ -68,16 +75,16 @@ class Bot:
         ]
 
     def run(
-        self,
-        t: float,
-        dt: float,
-        longitude: float,
-        latitude: float,
-        heading: float,
-        speed: float,
-        vector: np.ndarray,
-        forecast: WeatherForecast,
-        world_map: MapProxy,
+            self,
+            t: float,
+            dt: float,
+            longitude: float,
+            latitude: float,
+            heading: float,
+            speed: float,
+            vector: np.ndarray,
+            forecast: WeatherForecast,
+            world_map: MapProxy,
     ):
         """
         This is the method that will be called at every time step to get the
@@ -129,11 +136,30 @@ class Bot:
             if dist < ch.radius:
                 ch.reached = True
             if not ch.reached:
-                if np.abs(traveled_dist) < 1.5 and self.step > 5 and self.course.index(ch) != len(self.course) - 1:
+                if np.abs(traveled_dist) < 2 and self.step > 40 and self.course.index(ch) != len(self.course) - 1 and self.tacking_times < 4:
                     print(traveled_dist)
-                    fudge = 0.001*(random() - 0.5)
-                    ch.longitude += fudge
-                    ch.latitude += fudge
+                    fudge = 10 * (random() - 0.5)
+                    a = go_to(Location(longitude=ch.longitude, latitude=ch.latitude),
+                              Location(longitude=longitude, latitude=latitude))
+                    if self.tacking and self.tacking_n < 15:
+                        self.tacking_n += 1
+                        instructions.heading = Heading(heading)
+                        break
+                    if self.previous_tack > 0:
+                        if fudge > 0:
+                            fudge = -fudge
+                    else:
+                        if fudge < 0:
+                            fudge = -fudge
+                    instructions.heading = Heading(angle=a * fudge)
+                    self.previous_tack = fudge
+                    self.tacking = True
+                    self.tacking_times += 1
+                    self.tacking_n = 0
+                    break
+                self.tacking = False
+                self.tacking_n = 0
+                self.tacking_times = 0
                 instructions.location = Location(
                     longitude=ch.longitude, latitude=ch.latitude
                 )
