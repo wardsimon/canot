@@ -27,7 +27,9 @@ class Position:
 
 CREATOR = "CaptainHaddock"  # This is your team name
 
-
+import os 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+icon = os.path.join(dir_path, "haddock.png")
 
 class Bot:
     """
